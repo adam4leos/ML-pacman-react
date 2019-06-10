@@ -3,8 +3,6 @@ import * as tf from '@tensorflow/tfjs';
 export const CONTROLS = ['up', 'down', 'left', 'right'];
 const CONTROL_CODES = [38, 40, 37, 39];
 
-const trainStatusElement = document.getElementById('train-status');
-
 // Set hyper params from UI values.
 const learningRateElement = document.getElementById('learningRate');
 export const getLearningRate = () => +learningRateElement.value;
@@ -17,7 +15,6 @@ export const getEpochs = () => +epochsElement.value;
 
 const denseUnitsElement = document.getElementById('dense-units');
 export const getDenseUnits = () => +denseUnitsElement.value;
-const statusElement = document.getElementById('status');
 
 export function startPacman() {
     google.pacman.startGameplay();
@@ -29,13 +26,13 @@ export function predictClass(classId) {
 }
 
 export function isPredicting() {
-    statusElement.style.visibility = 'visible';
+    document.getElementById('status').style.visibility = 'visible';
 }
 export function donePredicting() {
-    statusElement.style.visibility = 'hidden';
+    document.getElementById('status').style.visibility = 'hidden';
 }
 export function trainStatus(status) {
-    trainStatusElement.innerText = status;
+    document.getElementById('train-status').innerText = status;
 }
 
 export let addExampleHandler;

@@ -25,7 +25,7 @@ header b {
     margin: 9px auto 0;
 }
 .controller-panels.hidden {
-    display: none;
+    visibility: hidden;
 }
 .panel {
     box-sizing: border-box;

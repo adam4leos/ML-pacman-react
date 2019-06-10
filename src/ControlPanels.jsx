@@ -20,18 +20,62 @@ const StatusElement = styled.div`
 `;
 
 const totals = [0, 0, 0, 0];
+let isPredicting = false;
+let truncatedMobileNet;
+let model;
 
 class ControlPanels extends Component {
     constructor() {
         super();
 
         this.state = { isLoading: true };
-        this.mouseUpHandler = this.mouseUpHandler.bind(this);
         this.handler = this.handler.bind(this);
+        this.trainClickHandler = this.trainClickHandler.bind(this);
+        this.predictClickHandler = this.predictClickHandler.bind(this);
+        this.train = this.train.bind(this);
     }
 
-    mouseUpHandler() {
-        console.log('up');
+    async train() {
+        if (controllerDataset.xs == null) {
+            throw new Error('Add some examples before training!');
+        }
+
+        model = tf.sequential({
+            layers: [
+                tf.layers.flatten({ inputShape: truncatedMobileNet.outputs[0].shape.slice(1) }),
+                tf.layers.dense({
+                    units: ui.getDenseUnits(),
+                    activation: 'relu',
+                    kernelInitializer: 'varianceScaling',
+                    useBias: true,
+                }),
+                tf.layers.dense({
+                    units: NUM_CLASSES,
+                    kernelInitializer: 'varianceScaling',
+                    useBias: false,
+                    activation: 'softmax',
+                }),
+            ],
+        });
+
+        const optimizer = tf.train.adam(ui.getLearningRate());
+
+        model.compile({ optimizer: optimizer, loss: 'categoricalCrossentropy' });
+
+        const batchSize = Math.floor(controllerDataset.xs.shape[0] * ui.getBatchSizeFraction());
+        if (!(batchSize > 0)) {
+            throw new Error(`Batch size is 0 or NaN. Please choose a non-zero fraction.`);
+        }
+
+        model.fit(controllerDataset.xs, controllerDataset.ys, {
+            batchSize,
+            epochs: ui.getEpochs(),
+            callbacks: {
+                onBatchEnd: async (batch, logs) => {
+                    ui.trainStatus('Loss: ' + logs.loss.toFixed(5));
+                },
+            },
+        });
     }
 
     async handler(label) {
@@ -48,25 +92,10 @@ class ControlPanels extends Component {
     }
 
     async componentDidMount() {
-        const upButton = document.getElementById('up');
-        const downButton = document.getElementById('down');
-        const leftButton = document.getElementById('left');
-        const rightButton = document.getElementById('right');
-
-        upButton.addEventListener('mousedown', () => this.handler(0));
-
-        downButton.addEventListener('mousedown', () => this.handler(1));
-
-        leftButton.addEventListener('mousedown', () => this.handler(2));
-
-        rightButton.addEventListener('mousedown', () => this.handler(3));
         const NUM_CLASSES = 4;
 
         const webcam = new Webcam(document.getElementById('webcam'));
         const controllerDataset = new ControllerDataset(NUM_CLASSES);
-
-        let truncatedMobileNet;
-        let model;
 
         async function loadTruncatedMobileNet() {
             const mobilenet = await tf.loadLayersModel(
@@ -86,51 +115,6 @@ class ControlPanels extends Component {
                 ui.drawThumb(img, label);
             });
         });
-
-        async function train() {
-            if (controllerDataset.xs == null) {
-                throw new Error('Add some examples before training!');
-            }
-
-            model = tf.sequential({
-                layers: [
-                    tf.layers.flatten({ inputShape: truncatedMobileNet.outputs[0].shape.slice(1) }),
-                    tf.layers.dense({
-                        units: ui.getDenseUnits(),
-                        activation: 'relu',
-                        kernelInitializer: 'varianceScaling',
-                        useBias: true,
-                    }),
-                    tf.layers.dense({
-                        units: NUM_CLASSES,
-                        kernelInitializer: 'varianceScaling',
-                        useBias: false,
-                        activation: 'softmax',
-                    }),
-                ],
-            });
-
-            const optimizer = tf.train.adam(ui.getLearningRate());
-
-            model.compile({ optimizer: optimizer, loss: 'categoricalCrossentropy' });
-
-            const batchSize = Math.floor(controllerDataset.xs.shape[0] * ui.getBatchSizeFraction());
-            if (!(batchSize > 0)) {
-                throw new Error(`Batch size is 0 or NaN. Please choose a non-zero fraction.`);
-            }
-
-            model.fit(controllerDataset.xs, controllerDataset.ys, {
-                batchSize,
-                epochs: ui.getEpochs(),
-                callbacks: {
-                    onBatchEnd: async (batch, logs) => {
-                        ui.trainStatus('Loss: ' + logs.loss.toFixed(5));
-                    },
-                },
-            });
-        }
-
-        let isPredicting = false;
 
         async function predict() {
             ui.isPredicting();
@@ -166,20 +150,21 @@ class ControlPanels extends Component {
 
         tf.tidy(() => truncatedMobileNet.predict(webcam.capture()));
 
-        document.getElementById('train').addEventListener('click', async () => {
-            ui.trainStatus('Training...');
-            await tf.nextFrame();
-            await tf.nextFrame();
-            isPredicting = false;
-            train();
-        });
-        document.getElementById('predict').addEventListener('click', () => {
-            ui.startPacman();
-            isPredicting = true;
-            predict();
-        });
-
         this.setState({ isLoading: false });
+    }
+
+    async trainClickHandler() {
+        ui.trainStatus('Training...');
+        await tf.nextFrame();
+        await tf.nextFrame();
+        isPredicting = false;
+        this.train();
+    }
+
+    predictClickHandler() {
+        ui.startPacman();
+        isPredicting = true;
+        predict();
     }
 
     render() {
@@ -193,11 +178,11 @@ class ControlPanels extends Component {
                 <div className={`controller-panels ${isLoading && 'hidden'}`} id="controller">
                     <div className="panel training-panel">
                         <div className="panel-row big-buttons">
-                            <button id="train">
+                            <button onClick={this.trainClickHandler}>
                                 <img width="66" height="66" src={buttonImage} />
                                 <span id="train-status">TRAIN MODEL</span>
                             </button>
-                            <button id="predict">
+                            <button onClick={this.predictClickHandler}>
                                 <img width="66" height="66" src={buttonImage} />
                                 <span>PLAY</span>
                             </button>
@@ -285,7 +270,7 @@ class ControlPanels extends Component {
                                         <div className="thumb-box-inner">
                                             <canvas className="thumb" width="224" height="224" id="up-thumb" />
                                         </div>
-                                        <button className="record-button" id="up" onMouseUp={this.mouseUpHandler}>
+                                        <button className="record-button" id="up" onMouseDown={() => this.handler(0)}>
                                             <span>Add Sample</span>
                                         </button>
                                     </div>
@@ -304,7 +289,7 @@ class ControlPanels extends Component {
                                         <div className="thumb-box-inner">
                                             <canvas className="thumb" width="224" height="224" id="left-thumb" />
                                         </div>
-                                        <button className="record-button" id="left" onMouseUp={this.mouseUpHandler}>
+                                        <button className="record-button" id="left" onMouseDown={() => this.handler(2)}>
                                             <span>Add Sample</span>
                                         </button>
                                     </div>
@@ -324,7 +309,11 @@ class ControlPanels extends Component {
                                         <div className="thumb-box-inner">
                                             <canvas className="thumb" width="224" height="224" id="right-thumb" />
                                         </div>
-                                        <button className="record-button" id="right" onMouseUp={this.mouseUpHandler}>
+                                        <button
+                                            className="record-button"
+                                            id="right"
+                                            onMouseDown={() => this.handler(3)}
+                                        >
                                             <span>Add Sample</span>
                                         </button>
                                     </div>
@@ -344,7 +333,7 @@ class ControlPanels extends Component {
                                         <div className="thumb-box-inner">
                                             <canvas className="thumb" width="224" height="224" id="down-thumb" />
                                         </div>
-                                        <button className="record-button" id="down" onMouseUp={this.mouseUpHandler}>
+                                        <button className="record-button" id="down" onMouseDown={() => this.handler(1)}>
                                             <span>Add Sample</span>
                                         </button>
                                     </div>
