@@ -1,8 +1,11 @@
+import React, { Component } from 'react';
 import * as tf from '@tensorflow/tfjs';
 
-import { ControllerDataset } from './controller_dataset';
-import * as ui from './ui';
-import { Webcam } from './webcam';
+import { ControllerDataset } from '../controller_dataset';
+import * as ui from '../ui';
+import { Webcam } from '../webcam';
+import Header from './Header';
+import GameContainer from './GameContainer';
 
 // The number of classes we want to predict. In this example, we will be
 // predicting 4 classes for up, down, left, and right.
@@ -149,21 +152,29 @@ document.getElementById('predict').addEventListener('click', () => {
     predict();
 });
 
-async function init() {
-    try {
-        await webcam.setup();
-    } catch (e) {
-        document.getElementById('no-webcam').style.display = 'block';
+export default class App extends Component {
+    async componentDidMount() {
+        try {
+            await webcam.setup();
+        } catch (e) {
+            document.getElementById('no-webcam').style.display = 'block';
+        }
+        truncatedMobileNet = await loadTruncatedMobileNet();
+
+        // Warm up the model. This uploads weights to the GPU and compiles the WebGL
+        // programs so the first time we collect data from the webcam it will be
+        // quick.
+        tf.tidy(() => truncatedMobileNet.predict(webcam.capture()));
+
+        ui.init();
     }
-    truncatedMobileNet = await loadTruncatedMobileNet();
 
-    // Warm up the model. This uploads weights to the GPU and compiles the WebGL
-    // programs so the first time we collect data from the webcam it will be
-    // quick.
-    tf.tidy(() => truncatedMobileNet.predict(webcam.capture()));
-
-    ui.init();
+    render() {
+        return (
+            <div>
+                <Header />
+                <GameContainer />
+            </div>
+        );
+    }
 }
-
-// Initialize the application.
-init();
