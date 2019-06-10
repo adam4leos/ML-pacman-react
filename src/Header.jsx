@@ -1,17 +1,23 @@
 import React from 'react';
 import styled from 'styled-components';
 
-const Header = () => (
-    <header>
-        <HeaderElement>
-            Turn your <b>Web Camera</b> into a controller using a <b>Neural Network</b>.
-        </HeaderElement>
-        <ErrorElement id="no-webcam">
-            No webcam found. <br />
-            To use this demo, use a device with a webcam.
-        </ErrorElement>
-    </header>
-);
+const Header = props => {
+    console.log(props);
+    const { isWebcamFound } = props;
+    return (
+        <header>
+            <HeaderElement>
+                Turn your <b>Web Camera</b> into a controller using a <b>Neural Network</b>. {isWebcamFound}
+            </HeaderElement>
+            {!isWebcamFound && (
+                <ErrorElement>
+                    No webcam found. <br />
+                    To use this demo, use a device with a webcam.
+                </ErrorElement>
+            )}
+        </header>
+    );
+};
 
 const HeaderElement = styled.header`
     background-color: #ef6c00;

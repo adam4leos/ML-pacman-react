@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 
 const GameContainer = () => (
-    <Container id="pacman-container">
+    <Container>
         <Logo id="logo">
             <LogoL id="logo-l">
                 <LogoB id="logo-b" />

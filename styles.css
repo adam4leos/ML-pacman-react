@@ -18,19 +18,14 @@ header b {
     font-weight: 400;
 }
 
-/** Loading message. */
-#status {
-    color: #f8f8f8;
-    font-weight: 300;
-    margin: 12px 0;
-    text-align: center;
-}
-
 /** Controls. **/
 .controller-panels {
     display: flex;
     flex-direction: row;
     margin: 9px auto 0;
+}
+.controller-panels.hidden {
+    display: none;
 }
 .panel {
     box-sizing: border-box;
