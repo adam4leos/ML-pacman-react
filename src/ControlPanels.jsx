@@ -20,6 +20,8 @@ const StatusElement = styled.div`
 `;
 
 const totals = [0, 0, 0, 0];
+const NUM_CLASSES = 4;
+
 let isPredicting = false;
 let truncatedMobileNet;
 let model;
@@ -28,15 +30,24 @@ class ControlPanels extends Component {
     constructor() {
         super();
 
-        this.state = { isLoading: true };
         this.handler = this.handler.bind(this);
         this.trainClickHandler = this.trainClickHandler.bind(this);
         this.predictClickHandler = this.predictClickHandler.bind(this);
         this.train = this.train.bind(this);
+        this.predict = this.predict.bind(this);
+
+        this.state = {
+            isLoading: true,
+            isPredicting: false,
+        };
+
+        this.controllerDataset = new ControllerDataset(NUM_CLASSES);
     }
 
     async train() {
-        if (controllerDataset.xs == null) {
+        const { xs, ys } = this.controllerDataset;
+
+        if (xs == null) {
             throw new Error('Add some examples before training!');
         }
 
@@ -44,7 +55,7 @@ class ControlPanels extends Component {
             layers: [
                 tf.layers.flatten({ inputShape: truncatedMobileNet.outputs[0].shape.slice(1) }),
                 tf.layers.dense({
-                    units: ui.getDenseUnits(),
+                    units: Number(document.getElementById('dense-units').value),
                     activation: 'relu',
                     kernelInitializer: 'varianceScaling',
                     useBias: true,
@@ -58,24 +69,47 @@ class ControlPanels extends Component {
             ],
         });
 
-        const optimizer = tf.train.adam(ui.getLearningRate());
+        const optimizer = tf.train.adam(Number(document.getElementById('learningRate').value));
 
         model.compile({ optimizer: optimizer, loss: 'categoricalCrossentropy' });
 
-        const batchSize = Math.floor(controllerDataset.xs.shape[0] * ui.getBatchSizeFraction());
+        const batchSize = Math.floor(xs.shape[0] * Number(document.getElementById('batchSizeFraction').value));
+
         if (!(batchSize > 0)) {
             throw new Error(`Batch size is 0 or NaN. Please choose a non-zero fraction.`);
         }
 
-        model.fit(controllerDataset.xs, controllerDataset.ys, {
+        model.fit(xs, ys, {
             batchSize,
-            epochs: ui.getEpochs(),
+            epochs: Number(document.getElementById('epochs').value),
             callbacks: {
                 onBatchEnd: async (batch, logs) => {
                     ui.trainStatus('Loss: ' + logs.loss.toFixed(5));
                 },
             },
         });
+    }
+
+    async predict() {
+        this.setState({ isPredicting: true });
+
+        while (isPredicting) {
+            const predictedClass = tf.tidy(() => {
+                const img = webcam.capture();
+                const embeddings = truncatedMobileNet.predict(img);
+                const predictions = model.predict(embeddings);
+
+                return predictions.as1D().argMax();
+            });
+
+            const classId = (await predictedClass.data())[0];
+            predictedClass.dispose();
+
+            ui.predictClass(classId);
+            await tf.nextFrame();
+        }
+
+        this.setState({ isPredicting: false });
     }
 
     async handler(label) {
@@ -92,10 +126,7 @@ class ControlPanels extends Component {
     }
 
     async componentDidMount() {
-        const NUM_CLASSES = 4;
-
         const webcam = new Webcam(document.getElementById('webcam'));
-        const controllerDataset = new ControllerDataset(NUM_CLASSES);
 
         async function loadTruncatedMobileNet() {
             const mobilenet = await tf.loadLayersModel(
@@ -109,32 +140,12 @@ class ControlPanels extends Component {
         ui.setExampleHandler(label => {
             tf.tidy(() => {
                 const img = webcam.capture();
-                controllerDataset.addExample(truncatedMobileNet.predict(img), label);
+                this.controllerDataset.addExample(truncatedMobileNet.predict(img), label);
 
                 // Draw the preview thumbnail.
                 ui.drawThumb(img, label);
             });
         });
-
-        async function predict() {
-            ui.isPredicting();
-            while (isPredicting) {
-                const predictedClass = tf.tidy(() => {
-                    const img = webcam.capture();
-                    const embeddings = truncatedMobileNet.predict(img);
-                    const predictions = model.predict(embeddings);
-
-                    return predictions.as1D().argMax();
-                });
-
-                const classId = (await predictedClass.data())[0];
-                predictedClass.dispose();
-
-                ui.predictClass(classId);
-                await tf.nextFrame();
-            }
-            ui.donePredicting();
-        }
 
         let isWebcamFound = true;
 
@@ -164,16 +175,16 @@ class ControlPanels extends Component {
     predictClickHandler() {
         ui.startPacman();
         isPredicting = true;
-        predict();
+        this.predict();
     }
 
     render() {
-        const { isLoading } = this.state;
+        const { isLoading, isPredicting } = this.state;
         const { isWebcamFound } = this.props;
 
         return (
             <ControlsWrapper>
-                {isWebcamFound && <Status />}
+                {(isWebcamFound || isPredicting) && <Status />}
 
                 <div className={`controller-panels ${isLoading && 'hidden'}`} id="controller">
                     <div className="panel training-panel">

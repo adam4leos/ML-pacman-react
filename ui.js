@@ -3,19 +3,6 @@ import * as tf from '@tensorflow/tfjs';
 export const CONTROLS = ['up', 'down', 'left', 'right'];
 const CONTROL_CODES = [38, 40, 37, 39];
 
-// Set hyper params from UI values.
-const learningRateElement = document.getElementById('learningRate');
-export const getLearningRate = () => +learningRateElement.value;
-
-const batchSizeFractionElement = document.getElementById('batchSizeFraction');
-export const getBatchSizeFraction = () => +batchSizeFractionElement.value;
-
-const epochsElement = document.getElementById('epochs');
-export const getEpochs = () => +epochsElement.value;
-
-const denseUnitsElement = document.getElementById('dense-units');
-export const getDenseUnits = () => +denseUnitsElement.value;
-
 export function startPacman() {
     google.pacman.startGameplay();
 }
