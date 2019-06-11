@@ -2,14 +2,14 @@ import React from 'react';
 import styled from 'styled-components';
 
 const Header = props => {
-    console.log(props);
-    const { isWebcamFound } = props;
+    const { isWebcamFailed } = props;
+
     return (
         <header>
             <HeaderElement>
-                Turn your <b>Web Camera</b> into a controller using a <b>Neural Network</b>. {isWebcamFound}
+                Turn your <b>Web Camera</b> into a controller using a <b>Neural Network</b>.
             </HeaderElement>
-            {!isWebcamFound && (
+            {isWebcamFailed && (
                 <ErrorElement>
                     No webcam found. <br />
                     To use this demo, use a device with a webcam.
@@ -35,7 +35,6 @@ const HeaderElement = styled.header`
 `;
 
 const ErrorElement = styled.div`
-    display: none;
     text-align: center;
     font-size: 30px;
     color: white;

@@ -11,24 +11,12 @@ export class Webcam {
         this.webcamElement = webcamElement;
     }
 
-    /**
-     * Captures a frame from the webcam and normalizes it between -1 and 1.
-     * Returns a batched image (1-element batch) of shape [1, w, h, c].
-     */
     capture() {
         return tf.tidy(() => {
-            // Reads the image as a Tensor from the webcam <video> element.
             const webcamImage = tf.browser.fromPixels(this.webcamElement);
-
-            // Crop the image so we're using the center square of the rectangular
-            // webcam.
             const croppedImage = this.cropImage(webcamImage);
-
-            // Expand the outer most dimension so we have a batch size of 1.
             const batchedImage = croppedImage.expandDims(0);
 
-            // Normalize the image between -1 and 1. The image comes in between 0-255,
-            // so we divide by 127 and subtract 1.
             return batchedImage
                 .toFloat()
                 .div(tf.scalar(127))
@@ -87,11 +75,11 @@ export class Webcam {
                         );
                     },
                     error => {
-                        reject();
+                        reject(error);
                     },
                 );
             } else {
-                reject();
+                reject('hz');
             }
         });
     }

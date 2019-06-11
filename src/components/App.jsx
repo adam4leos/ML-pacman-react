@@ -2,14 +2,15 @@ import React, { Component } from 'react';
 
 import Header from './Header';
 import GameContainer from './GameContainer';
-import ControlPanels from './ControlPanels';
+import ControlPanels from './ControlPanels/ControlPanels';
 
 export default class App extends Component {
     constructor() {
         super();
 
+        this.onWebcamFail = this.onWebcamFail.bind(this);
         this.state = {
-            isWebcamFound: false,
+            isWebcamFailed: false,
         };
     }
 
@@ -25,14 +26,18 @@ export default class App extends Component {
         this.loadScript();
     }
 
+    onWebcamFail() {
+        this.setState({ isWebcamFailed: true });
+    }
+
     render() {
-        const { isWebcamFound } = this.state;
+        const { isWebcamFailed } = this.state;
 
         return (
             <div>
-                <Header isWebcamFound={isWebcamFound} />
+                <Header isWebcamFailed={isWebcamFailed} />
                 <GameContainer />
-                <ControlPanels isWebcamFound={isWebcamFound} />
+                <ControlPanels isWebcamFailed={isWebcamFailed} onWebcamFail={this.onWebcamFail} />
             </div>
         );
     }

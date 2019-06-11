@@ -12,21 +12,6 @@ export function predictClass(classId) {
     document.body.setAttribute('data-active', CONTROLS[classId]);
 }
 
-export function isPredicting() {
-    document.getElementById('status').style.visibility = 'visible';
-}
-export function donePredicting() {
-    document.getElementById('status').style.visibility = 'hidden';
-}
-export function trainStatus(status) {
-    document.getElementById('train-status').innerText = status;
-}
-
-export let addExampleHandler;
-export function setExampleHandler(handler) {
-    addExampleHandler = handler;
-}
-
 const thumbDisplayed = {};
 
 export function drawThumb(img, label) {
