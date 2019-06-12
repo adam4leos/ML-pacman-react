@@ -3,7 +3,6 @@ import styled from 'styled-components';
 import * as tf from '@tensorflow/tfjs';
 
 import joystickImage from './../../../images/joystick.png';
-import pointerImage from './../../../images/pointer.svg';
 
 import { CONTROLS } from '../../../ui';
 import { ControllerDataset } from '../../../controller_dataset';
@@ -13,10 +12,12 @@ import { Webcam } from '../../../webcam';
 import Status from './Status';
 import ControlButton from './ControlButton';
 import Dropdown from './Dropdown';
+import PanelCell from './PanelCell';
 
 const totals = [0, 0, 0, 0];
 const NUM_CLASSES = 4;
 const DEFAULT_STATUS_LABEL = 'train model';
+const PLAY_BUTTON_LABEL_TEXT = 'play';
 
 let isPredicting = false;
 let truncatedMobileNet;
@@ -195,14 +196,17 @@ class ControlPanels extends Component {
 
         return (
             <ControlsWrapper>
-                {(isLoading || isPredicting) && <Status />}
+                <Status isLoading={isLoading} />
 
                 {!isWebcamFailed && (
                     <div className={`controller-panels ${isLoading && 'hidden'}`} id="controller">
                         <div className="panel training-panel">
                             <div className="panel-row big-buttons">
                                 <ControlButton onClickHandler={this.trainClickHandler} label={statusLabel} />
-                                <ControlButton onClickHandler={this.predictClickHandler} label="PLAY" />
+                                <ControlButton
+                                    onClickHandler={this.predictClickHandler}
+                                    label={PLAY_BUTTON_LABEL_TEXT}
+                                />
                             </div>
 
                             <div className="panel-row params-webcam-row">
@@ -211,6 +215,7 @@ class ControlPanels extends Component {
                                         label="Learning rate"
                                         selectID="learningRate"
                                         values={[0.00001, 0.0001, 0.01, 0.03]}
+                                        selectedValue="0.0001"
                                     />
 
                                     <Dropdown
@@ -233,92 +238,21 @@ class ControlPanels extends Component {
                         </div>
 
                         <div className="panel joystick-panel">
-                            <div className="panel-row panel-row-top">
-                                <div className="panel-cell panel-cell-left panel-cell-fill">
-                                    <p className="help-text">
-                                        Click to add the <br />
-                                        current camera <br />
-                                        view as an example <br />
-                                        for that control
-                                    </p>
-                                </div>
-
-                                <div className="panel-cell panel-cell-center">
-                                    <div className="thumb-box">
-                                        <div className="thumb-box-outer">
-                                            <div className="thumb-box-inner">
-                                                <canvas className="thumb" width="224" height="224" id="up-thumb" />
-                                            </div>
-                                            <button className="record-button" onMouseDown={() => this.handler(0)}>
-                                                <span>Add Sample</span>
-                                            </button>
-                                        </div>
-                                        <p>
-                                            <span id="up-total">0</span> examples
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="panel-cell panel-cell-right panel-cell-fill" />
+                            <div className="panel-row">
+                                <PanelCell side="up" onMouseDown={() => this.handler(0)} />
                             </div>
-                            <div className="panel-row panel-row-middle">
-                                <div className="panel-cell panel-cell-left">
-                                    <div className="thumb-box">
-                                        <div className="thumb-box-outer">
-                                            <div className="thumb-box-inner">
-                                                <canvas className="thumb" width="224" height="224" id="left-thumb" />
-                                            </div>
-                                            <button className="record-button" onMouseDown={() => this.handler(2)}>
-                                                <span>Add Sample</span>
-                                            </button>
-                                        </div>
-                                        <p>
-                                            <span id="left-total">0</span> examples
-                                        </p>
-                                    </div>
-                                </div>
+                            <div className="panel-row">
+                                <PanelCell side="left" onMouseDown={() => this.handler(2)} />
 
-                                <div className="panel-cell panel-cell-center panel-cell-fill">
+                                <div className="panel-cell">
                                     <img height="108" width="129" src={joystickImage} />
                                 </div>
 
-                                <div className="panel-cell panel-cell-right">
-                                    <div className="thumb-box">
-                                        <div className="thumb-box-outer">
-                                            <div className="thumb-box-inner">
-                                                <canvas className="thumb" width="224" height="224" id="right-thumb" />
-                                            </div>
-                                            <button className="record-button" onMouseDown={() => this.handler(3)}>
-                                                <span>Add Sample</span>
-                                            </button>
-                                        </div>
-                                        <p>
-                                            <span id="right-total">0</span> examples
-                                        </p>
-                                    </div>
-                                </div>
+                                <PanelCell side="right" onMouseDown={() => this.handler(3)} />
                             </div>
 
-                            <div className="panel-row panel-row-bottom">
-                                <div className="panel-cell panel-cell-left panel-cell-fill" />
-
-                                <div className="panel-cell panel-cell-center">
-                                    <div className="thumb-box">
-                                        <div className="thumb-box-outer">
-                                            <div className="thumb-box-inner">
-                                                <canvas className="thumb" width="224" height="224" id="down-thumb" />
-                                            </div>
-                                            <button className="record-button" onMouseDown={() => this.handler(1)}>
-                                                <span>Add Sample</span>
-                                            </button>
-                                        </div>
-                                        <p>
-                                            <span id="down-total">0</span> examples
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="panel-cell panel-cell-right panel-cell-fill" />
+                            <div className="panel-row">
+                                <PanelCell side="down" onMouseDown={() => this.handler(1)} />
                             </div>
                         </div>
                     </div>

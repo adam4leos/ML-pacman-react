@@ -1,19 +1,41 @@
-import React from 'react';
+import React, { Component } from 'react';
 import styled from 'styled-components';
 
-const Dropdown = ({ label, selectID, values }) => (
-    <DropdownElement>
-        <DropdownLabel>{label}</DropdownLabel>
-        <DropdownSelectWrap className="select">
-            <DropdownSelect id={selectID}>
-                {values.map(value => (
-                    <option value={value}>{value}</option>
-                ))}
-            </DropdownSelect>
-        </DropdownSelectWrap>
-    </DropdownElement>
-);
+class Dropdown extends Component {
+    constructor({ selectedValue }) {
+        super();
 
+        this.onSelectChange = this.onSelectChange.bind(this);
+
+        this.state = { selectedValue };
+    }
+
+    onSelectChange({ target }) {
+        const selectedValue = target.value;
+
+        this.setState({ selectedValue });
+    }
+
+    render() {
+        const { label, selectID, values } = this.props;
+        const { selectedValue } = this.state;
+
+        return (
+            <DropdownElement>
+                <DropdownLabel>{label}</DropdownLabel>
+                <DropdownSelectWrap className="select">
+                    <DropdownSelect value={selectedValue} id={selectID} onChange={this.onSelectChange}>
+                        {values.map(value => (
+                            <option key={value} value={value}>
+                                {value}
+                            </option>
+                        ))}
+                    </DropdownSelect>
+                </DropdownSelectWrap>
+            </DropdownElement>
+        );
+    }
+}
 const DropdownElement = styled.div`
     flex-direction: column;
     width: 110px;
