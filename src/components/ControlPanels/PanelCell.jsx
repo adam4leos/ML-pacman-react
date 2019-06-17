@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 
 const PanelCell = ({ onMouseDown, side }) => (
-    <div className="panel-cell">
+    <PanelCellElement>
         <ThumbBox>
             <ThumbBoxOuter>
                 <ThumbBoxInner>
@@ -16,7 +16,7 @@ const PanelCell = ({ onMouseDown, side }) => (
                 <span id={`${side}-total`}>0</span> examples
             </TotalLabel>
         </ThumbBox>
-    </div>
+    </PanelCellElement>
 );
 
 const ThumbBox = styled.div`
@@ -32,6 +32,8 @@ const ThumbBoxOuter = styled.div`
     padding: 9px;
     position: relative;
     transition: box-shadow 0.3s;
+
+    ${props => props.bla && 'box-shadow: 0 0 4px 4px #ffaa00;'}
 `;
 
 const ThumbBoxInner = styled.div`
@@ -77,6 +79,15 @@ const TotalLabel = styled.p`
     margin: 0;
     padding: 0;
     text-align: center;
+`;
+
+const PanelCellElement = styled.div`
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    justify-content: center;
+    position: relative;
 `;
 
 export default PanelCell;

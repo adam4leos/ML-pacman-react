@@ -13,6 +13,7 @@ import Status from './Status';
 import ControlButton from './ControlButton';
 import Dropdown from './Dropdown';
 import PanelCell from './PanelCell';
+import WebcamBox from '../WebcamBox';
 
 const totals = [0, 0, 0, 0];
 const NUM_CLASSES = 4;
@@ -34,6 +35,7 @@ class ControlPanels extends Component {
         this.predict = this.predict.bind(this);
         this.handleWebcamFail = this.handleWebcamFail.bind(this);
         this.changeStatusLabel = this.changeStatusLabel.bind(this);
+        this.loadTruncatedMobileNet = this.loadTruncatedMobileNet.bind(this);
 
         this.state = {
             isLoading: true,
@@ -43,7 +45,7 @@ class ControlPanels extends Component {
         };
 
         this.controllerDataset = new ControllerDataset(NUM_CLASSES);
-        this.webcam = null;
+        this.webcam = React.createRef();
     }
 
     async train() {
@@ -105,7 +107,7 @@ class ControlPanels extends Component {
 
         while (isPredicting) {
             const predictedClass = tf.tidy(() => {
-                const img = this.webcam.capture();
+                const img = this.webcam.current.capture();
                 const embeddings = truncatedMobileNet.predict(img);
                 const predictions = model.predict(embeddings);
 
@@ -128,7 +130,7 @@ class ControlPanels extends Component {
         const total = document.getElementById(className + '-total');
 
         tf.tidy(() => {
-            const img = this.webcam.capture();
+            const img = this.webcam.current.capture();
             this.controllerDataset.addExample(truncatedMobileNet.predict(img), label);
 
             ui.drawThumb(img, label);
@@ -141,27 +143,27 @@ class ControlPanels extends Component {
         document.body.removeAttribute('data-active');
     }
 
+    async loadTruncatedMobileNet() {
+        const mobilenet = await tf.loadLayersModel(
+            'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json',
+        );
+
+        const layer = mobilenet.getLayer('conv_pw_13_relu');
+        return tf.model({ inputs: mobilenet.inputs, outputs: layer.output });
+    }
+
     async componentDidMount() {
-        this.webcam = new Webcam(document.getElementById('webcam'));
-
-        async function loadTruncatedMobileNet() {
-            const mobilenet = await tf.loadLayersModel(
-                'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json',
-            );
-
-            const layer = mobilenet.getLayer('conv_pw_13_relu');
-            return tf.model({ inputs: mobilenet.inputs, outputs: layer.output });
-        }
+        const webcam = new Webcam(this.webcam.current);
 
         try {
-            await this.webcam.setup();
+            await webcam.setup();
         } catch (e) {
             this.handleWebcamFail();
         }
 
-        truncatedMobileNet = await loadTruncatedMobileNet();
+        truncatedMobileNet = await this.loadTruncatedMobileNet();
 
-        tf.tidy(() => truncatedMobileNet.predict(this.webcam.capture()));
+        tf.tidy(() => truncatedMobileNet.predict(webcam.capture()));
 
         this.setState({ isLoading: false });
     }
@@ -199,18 +201,18 @@ class ControlPanels extends Component {
                 <Status isLoading={isLoading} />
 
                 {!isWebcamFailed && (
-                    <div className={`controller-panels ${isLoading && 'hidden'}`} id="controller">
-                        <div className="panel training-panel">
-                            <div className="panel-row big-buttons">
+                    <ControlPanelsElement isLoading={isLoading}>
+                        <PanelElement>
+                            <PanelRowElement>
                                 <ControlButton onClickHandler={this.trainClickHandler} label={statusLabel} />
                                 <ControlButton
                                     onClickHandler={this.predictClickHandler}
                                     label={PLAY_BUTTON_LABEL_TEXT}
                                 />
-                            </div>
+                            </PanelRowElement>
 
-                            <div className="panel-row params-webcam-row">
-                                <div className="hyper-params">
+                            <PanelRowElement>
+                                <ParamsElement>
                                     <Dropdown
                                         label="Learning rate"
                                         selectID="learningRate"
@@ -227,35 +229,29 @@ class ControlPanels extends Component {
                                     <Dropdown label="Epochs" selectID="epochs" values={[10, 20, 40]} />
 
                                     <Dropdown label="Hidden units" selectID="dense-units" values={[10, 100, 200]} />
-                                </div>
+                                </ParamsElement>
 
-                                <div className="webcam-box-outer">
-                                    <div className="webcam-box-inner">
-                                        <video autoPlay playsInline muted id="webcam" width="224" height="224" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                                <WebcamBox ref={this.webcam} />
+                            </PanelRowElement>
+                        </PanelElement>
 
-                        <div className="panel joystick-panel">
-                            <div className="panel-row">
+                        <PanelElement>
+                            <PanelRowElement>
                                 <PanelCell side="up" onMouseDown={() => this.handler(0)} />
-                            </div>
-                            <div className="panel-row">
+                            </PanelRowElement>
+                            <PanelRowElement>
                                 <PanelCell side="left" onMouseDown={() => this.handler(2)} />
 
-                                <div className="panel-cell">
-                                    <img height="108" width="129" src={joystickImage} />
-                                </div>
+                                <img height="108" width="129" src={joystickImage} />
 
                                 <PanelCell side="right" onMouseDown={() => this.handler(3)} />
-                            </div>
+                            </PanelRowElement>
 
-                            <div className="panel-row">
+                            <PanelRowElement>
                                 <PanelCell side="down" onMouseDown={() => this.handler(1)} />
-                            </div>
-                        </div>
-                    </div>
+                            </PanelRowElement>
+                        </PanelElement>
+                    </ControlPanelsElement>
                 )}
             </ControlsWrapper>
         );
@@ -265,6 +261,53 @@ class ControlPanels extends Component {
 const ControlsWrapper = styled.div`
     display: flex;
     flex-direction: column;
+`;
+
+const ControlPanelsElement = styled.div`
+    display: flex;
+    flex-direction: row;
+    margin: 9px auto 0;
+    ${props => props.isLoading && 'visibility: hidden;'}
+
+    & button {
+        background: none;
+        border: none;
+        box-sizing: border-box;
+        cursor: pointer;
+        margin: 0;
+        padding: 0;
+    }
+`;
+
+const PanelElement = styled.div`
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 0;
+
+    &:first-child {
+        border-right: 1px dashed #565656;
+        padding: 0 22px 0 13px;
+        width: 396px;
+    }
+
+    &:last-child {
+        padding: 0 9px 0 22px;
+        width: 353px;
+    }
+`;
+
+const PanelRowElement = styled.div`
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 10px;
+`;
+
+const ParamsElement = styled.div`
+    display: flex;
+    flex-direction: column;
+    margin-left: 12px;
 `;
 
 export default ControlPanels;

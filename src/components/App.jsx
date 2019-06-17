@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import styled from 'styled-components';
 
 import Header from './Header';
 import GameContainer from './GameContainer';
@@ -34,11 +35,20 @@ export default class App extends Component {
         const { isWebcamFailed } = this.state;
 
         return (
-            <div>
+            <AppElement>
                 <Header isWebcamFailed={isWebcamFailed} />
                 <GameContainer />
                 <ControlPanels isWebcamFailed={isWebcamFailed} onWebcamFail={this.onWebcamFail} />
-            </div>
+            </AppElement>
         );
     }
 }
+
+const AppElement = styled.div`
+    display: flex;
+    flex-direction: column;
+    background: #2a2a2a;
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+`;

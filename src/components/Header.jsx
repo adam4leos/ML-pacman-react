@@ -7,7 +7,8 @@ const Header = props => {
     return (
         <header>
             <HeaderElement>
-                Turn your <b>Web Camera</b> into a controller using a <b>Neural Network</b>.
+                Turn your <HeaderBold>Web Camera</HeaderBold> into a controller using a
+                <HeaderBold> Neural Network</HeaderBold>.
             </HeaderElement>
             {isWebcamFailed && (
                 <ErrorElement>
@@ -40,6 +41,11 @@ const ErrorElement = styled.div`
     color: white;
     padding: 30px;
     line-height: 30px;
+`;
+
+const HeaderBold = styled.b`
+    color: rgba(255, 255, 255, 1);
+    font-weight: 400;
 `;
 
 export default Header;
